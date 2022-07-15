@@ -1,0 +1,13 @@
+-- To log into oracle as a SYS user
+sql system as sysdba
+
+-- To change directory while in oracle seesion
+cd ~/TPCHR
+cd ~/Desktop/Project/A1
+
+-- To exec an SQL file
+@test.sql
+
+
+
+
