@@ -40,12 +40,11 @@ select
 	ds.blocks as total_blocks, 
 	ds.bytes as total_bytes, 
 	ds.extents as total_extents,
-	ut.num_rows as total_rows
+	dt.num_rows as total_rows
 from dba_segments ds
-left outer join user_tables ut 
-on ut.table_name = ds.segment_name
-where ds.owner = 'TPCHR' and ds.segment_type = 'TABLE';
-
+left outer join dba_tables dt 
+on dt.table_name = ds.segment_name
+where dt.owner = 'TPCHR' and ds.segment_type = 'TABLE';
 
 -- Part 3(iii)
 select 
