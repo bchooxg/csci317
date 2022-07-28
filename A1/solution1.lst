@@ -1,3 +1,4 @@
+SQL> SET ECHO ON
 SQL> SET FEEDBACK ON
 SQL> SET LINESIZE 300
 SQL> SET PAGESIZE 300
@@ -11,7 +12,7 @@ SQL>
 SQL> -- Part 1
 SQL> connect system/oracle
 ERROR:
-ORA-28002: the password will expire within 6 days
+ORA-28002: the password will expire within 7 days
 
 Connected.
 SQL> 
@@ -19,7 +20,7 @@ SQL> select INSTANCE_NAME, HOST_NAME, STARTUP_TIME, DATABASE_STATUS from v$insta
 
 INSTANCE_NAME    HOST_NAME                                                        STARTUP_T DATABASE_STATUS  
 ---------------- ---------------------------------------------------------------- --------- -----------------
-db               localhost.localdomain                                            15-JUL-22 ACTIVE           
+db               localhost.localdomain                                            21-JUL-22 ACTIVE           
 
 1 row selected. 
 
@@ -71,7 +72,7 @@ SQL> SELECT SYSTIMESTAMP FROM DUAL;
 
 SYSTIMESTAMP
 --------------------------------------
-16-JUL-22 05.10.47.580095000 AM -04:00
+21-JUL-22 09.01.49.213899000 AM -04:00
 
 1 row selected. 
 
@@ -82,26 +83,25 @@ SQL> select
   3  	ds.blocks as total_blocks, 
   4  	ds.bytes as total_bytes, 
   5  	ds.extents as total_extents,
-  6  	ut.num_rows as total_rows
+  6  	dt.num_rows as total_rows
   7  from dba_segments ds
-  8  left outer join user_tables ut 
-  9  on ut.table_name = ds.segment_name
- 10  where ds.owner = 'TPCHR' and ds.segment_type = 'TABLE';
+  8  left outer join dba_tables dt 
+  9  on dt.table_name = ds.segment_name
+ 10  where dt.owner = 'TPCHR' and ds.segment_type = 'TABLE';
 
 TABLE_NAME                                                                                                                       TOTAL_BLOCKS TOTAL_BYTES TOTAL_EXTENTS TOTAL_ROWS
 -------------------------------------------------------------------------------------------------------------------------------- ------------ ----------- ------------- ----------
-REGION                                                                                                                                     32      262144             1           
-NATION                                                                                                                                     32      262144             1           
-PART                                                                                                                                     1088     8912896            34           
-SUPPLIER                                                                                                                                   96      786432             3           
-PARTSUPP                                                                                                                                 5024    41156608           157           
-CUSTOMER                                                                                                                                 1056     8650752            33           
-ORDERS                                                                                                                                   7296    59768832           228           
-LINEITEM                                                                                                                                32576   266862592          1018           
+REGION                                                                                                                                     32      262144             1          5
+NATION                                                                                                                                     32      262144             1         25
+PART                                                                                                                                     1088     8912896            34      60000
+SUPPLIER                                                                                                                                   96      786432             3       3000
+PARTSUPP                                                                                                                                 5024    41156608           157     240000
+CUSTOMER                                                                                                                                 1056     8650752            33      45000
+ORDERS                                                                                                                                   7296    59768832           228     450000
+LINEITEM                                                                                                                                32576   266862592          1018    1800093
 
 8 rows selected. 
 
-SQL> 
 SQL> 
 SQL> -- Part 3(iii)
 SQL> select 
