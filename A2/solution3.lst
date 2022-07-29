@@ -1,0 +1,219 @@
+SQL> SET ECHO ON
+SQL> SET FEEDBACK ON
+SQL> SET LINESIZE 300
+SQL> SET PAGESIZE 300
+SQL> 
+SQL> -- Name   : Bryan Choo
+SQL> -- UOW ID : 7060452
+SQL> 
+SQL> /*
+SQL>
+SQL>Find the total quantity of all items (attribute L_QUANTITY in a table LINEITEM) ordered 
+SQL>by the customers from a given country (attribute N_NAME in a table NATION). 
+SQL>
+SQL>*/
+SQL> 
+SQL> /*  Part 1  */
+SQL> 
+SQL> connect TPCHR/oracle
+Connected.
+SQL> 
+SQL> SET TIMING ON
+SQL> 
+SQL> SELECT n_name as Nation_Name , sum(l_quantity) as Total_Qty 
+  2  FROM lineitem l
+  3  LEFT OUTER JOIN orders o
+  4  ON l.l_orderkey = o.o_orderkey
+  5  LEFT OUTER JOIN customer c
+  6  ON o.o_custkey = c.c_custkey 
+  7  LEFT OUTER JOIN nation n
+  8  ON c.c_nationkey = n.n_nationkey
+  9  WHERE n_name = 'JAPAN'
+ 10  GROUP BY n.n_name ;
+
+NATION_NAME                TOTAL_QTY
+------------------------- ----------
+JAPAN                        1826007
+
+1 row selected. 
+
+Elapsed: 00:00:00.167
+SQL> 
+SQL> SET TIMING off
+SQL> 
+SQL> /*  Part 2  */
+SQL> 
+SQL> EXPLAIN PLAN FOR 
+  2  SELECT n_name as Nation_Name , sum(l_quantity) as Total_Qty 
+  3  FROM lineitem l
+  4  LEFT OUTER JOIN orders o
+  5  ON l.l_orderkey = o.o_orderkey
+  6  LEFT OUTER JOIN customer c
+  7  ON o.o_custkey = c.c_custkey 
+  8  LEFT OUTER JOIN nation n
+  9  ON c.c_nationkey = n.n_nationkey
+ 10  WHERE n_name = 'JAPAN'
+ 11  GROUP BY n.n_name ;
+
+Explained.
+
+SQL> 
+SQL> -- Display Plan
+SQL> SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PLAN_TABLE_OUTPUT
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Plan hash value: 2474323218
+ 
+----------------------------------------------------------------------------------
+| Id  | Operation             | Name     | Rows  | Bytes | Cost (%CPU)| Time     |
+----------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT      |          |     1 |    49 | 15251   (1)| 00:00:01 |
+|   1 |  SORT GROUP BY NOSORT |          |     1 |    49 | 15251   (1)| 00:00:01 |
+|*  2 |   HASH JOIN           |          | 72004 |  3445K| 15251   (1)| 00:00:01 |
+|*  3 |    HASH JOIN          |          | 18000 |   738K|  3099   (1)| 00:00:01 |
+|*  4 |     HASH JOIN         |          |  1800 | 59400 |   402   (1)| 00:00:01 |
+|*  5 |      TABLE ACCESS FULL| NATION   |     1 |    27 |    12   (0)| 00:00:01 |
+|*  6 |      TABLE ACCESS FULL| CUSTOMER | 45000 |   263K|   390   (1)| 00:00:01 |
+|*  7 |     TABLE ACCESS FULL | ORDERS   |   450K|  3955K|  2696   (1)| 00:00:01 |
+|   8 |    TABLE ACCESS FULL  | LINEITEM |  1800K|    12M| 12147   (1)| 00:00:01 |
+----------------------------------------------------------------------------------
+ 
+Predicate Information (identified by operation id):
+---------------------------------------------------
+ 
+   2 - access("L"."L_ORDERKEY"="O"."O_ORDERKEY")
+   3 - access("O"."O_CUSTKEY"="C"."C_CUSTKEY")
+   4 - access("C"."C_NATIONKEY"="N"."N_NATIONKEY")
+   5 - filter("N"."N_NAME"='JAPAN')
+   6 - filter("C"."C_NATIONKEY">=0)
+   7 - filter("O"."O_CUSTKEY">=0)
+
+25 rows selected. 
+
+SQL> 
+SQL> 
+SQL> 
+SQL> /*  Part 3  */
+SQL> 
+SQL> ALTER TABLE LINEITEM ADD l_custnation CHAR(25);
+
+Table altered.
+
+SQL> 
+SQL> /*  Part 4  */
+SQL> 
+SQL> SET TIMING ON
+SQL> 
+SQL> SELECT l_custnation, sum(l_quantity) as Total_Qty
+  2  FROM LINEITEM
+  3  WHERE l_custnation = 'JAPAN'
+  4  GROUP BY l_custnation;
+
+0 rows selected. 
+
+Elapsed: 00:00:00.150
+SQL> 
+SQL> SET TIMING OFF
+SQL> 
+SQL> 
+SQL> /*  Part 5  */
+SQL> 
+SQL> EXPLAIN PLAN FOR 
+  2  SELECT l_custnation, sum(l_quantity) as Total_Qty
+  3  FROM LINEITEM
+  4  WHERE l_custnation = 'JAPAN'
+  5  GROUP BY l_custnation;
+
+Explained.
+
+SQL> 
+SQL> -- Display Plan
+SQL> SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PLAN_TABLE_OUTPUT
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Plan hash value: 575412851
+ 
+---------------------------------------------------------------------------------
+| Id  | Operation            | Name     | Rows  | Bytes | Cost (%CPU)| Time     |
+---------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT     |          | 18001 |   509K| 12171   (1)| 00:00:01 |
+|   1 |  SORT GROUP BY NOSORT|          | 18001 |   509K| 12171   (1)| 00:00:01 |
+|*  2 |   TABLE ACCESS FULL  | LINEITEM | 18001 |   509K| 12171   (1)| 00:00:01 |
+---------------------------------------------------------------------------------
+ 
+Predicate Information (identified by operation id):
+---------------------------------------------------
+ 
+   2 - filter("L_CUSTNATION"='JAPAN')
+
+14 rows selected. 
+
+SQL> 
+SQL> /*  Part 6  */
+SQL> 
+SQL> CREATE INDEX idx ON lineitem ( l_custnation );
+
+Index created.
+
+SQL> 
+SQL> SET TIMING ON
+SQL> 
+SQL> SELECT l_custnation, sum(l_quantity) as Total_Qty
+  2  FROM LINEITEM
+  3  WHERE l_custnation = 'JAPAN'
+  4  GROUP BY l_custnation;
+
+0 rows selected. 
+
+Elapsed: 00:00:00.002
+SQL> 
+SQL> SET TIMING OFF
+SQL> 
+SQL> 
+SQL> /*  Part 7  */
+SQL> 
+SQL> EXPLAIN PLAN FOR 
+  2  SELECT l_custnation, sum(l_quantity) as Total_Qty
+  3  FROM LINEITEM
+  4  WHERE l_custnation = 'JAPAN'
+  5  GROUP BY l_custnation;
+
+Explained.
+
+SQL> 
+SQL> -- Display Plan
+SQL> SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PLAN_TABLE_OUTPUT
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Plan hash value: 4084563104
+ 
+-----------------------------------------------------------------------------------------
+| Id  | Operation                    | Name     | Rows  | Bytes | Cost (%CPU)| Time     |
+-----------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT             |          | 18001 |   509K|     1   (0)| 00:00:01 |
+|   1 |  SORT GROUP BY NOSORT        |          | 18001 |   509K|     1   (0)| 00:00:01 |
+|   2 |   TABLE ACCESS BY INDEX ROWID| LINEITEM | 18001 |   509K|     1   (0)| 00:00:01 |
+|*  3 |    INDEX RANGE SCAN          | IDX      |     1 |       |     1   (0)| 00:00:01 |
+-----------------------------------------------------------------------------------------
+ 
+Predicate Information (identified by operation id):
+---------------------------------------------------
+ 
+   3 - access("L_CUSTNATION"='JAPAN')
+
+15 rows selected. 
+
+SQL> 
+SQL> 
+SQL> 
+SQL> /* Clean up */
+SQL> ALTER TABLE LINEITEM DROP COLUMN l_custnation;
+
+Table altered.
+
+SQL> 
+SQL> 
+SQL> SPOOL OFF
