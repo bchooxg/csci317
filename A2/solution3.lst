@@ -37,7 +37,7 @@ JAPAN                        1826007
 
 1 row selected. 
 
-Elapsed: 00:00:00.167
+Elapsed: 00:00:00.171
 SQL> 
 SQL> SET TIMING off
 SQL> 
@@ -112,7 +112,7 @@ SQL> SELECT l_custnation, sum(l_quantity) as Total_Qty
 
 0 rows selected. 
 
-Elapsed: 00:00:00.150
+Elapsed: 00:00:00.148
 SQL> 
 SQL> SET TIMING OFF
 SQL> 
@@ -214,6 +214,5 @@ SQL> ALTER TABLE LINEITEM DROP COLUMN l_custnation;
 
 Table altered.
 
-SQL> 
 SQL> 
 SQL> SPOOL OFF
