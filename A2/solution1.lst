@@ -1,0 +1,203 @@
+SQL> SET ECHO ON
+SQL> SET FEEDBACK ON
+SQL> SET LINESIZE 300
+SQL> SET PAGESIZE 300
+SQL> 
+SQL> -- Name   : Bryan Choo
+SQL> -- UOW ID : 7060452
+SQL> 
+SQL> 
+SQL> -- Part 1
+SQL> 
+SQL> SELECT 	SEGMENT_NAME, 
+  2  	SUM(BYTES) TOTBYTES,
+  3         	SUM(BLOCKS) TOTBLOCKS
+  4  FROM 	SYS.DBA_EXTENTS
+  5  WHERE 	SEGMENT_NAME in ('ORDERS','LINEITEM') AND
+  6        	OWNER = 'TPCHR'
+  7  GROUP BY SEGMENT_NAME, 
+  8  	 OWNER;
+
+SEGMENT_NAME                                                                                                                       TOTBYTES  TOTBLOCKS
+-------------------------------------------------------------------------------------------------------------------------------- ---------- ----------
+LINEITEM                                                                                                                          266862592      32576
+ORDERS                                                                                                                             59768832       7296
+
+2 rows selected. 
+
+SQL> 
+SQL> -- Part 2
+SQL> 
+SQL> -- Find out the size of the two relational tables 
+SQL> select sum(TOTBYTES) / 1000000 from (
+  2  SELECT 	SEGMENT_NAME, 
+  3  	SUM(BYTES) TOTBYTES
+  4  FROM 	SYS.DBA_EXTENTS
+  5  WHERE 	SEGMENT_NAME in ('ORDERS','LINEITEM') AND
+  6        	OWNER = 'TPCHR'
+  7  GROUP BY SEGMENT_NAME, 
+  8  	 OWNER
+  9  );
+
+SUM(TOTBYTES)/1000000
+---------------------
+           326.631424
+
+1 row selected. 
+
+SQL> 
+SQL> 
+SQL> -- Create table space with the value
+SQL> 
+SQL> CREATE TABLESPACE tbs1 
+  2     DATAFILE 'tbs1_data.dbf' 
+  3     SIZE 327M;
+
+Tablespace created.
+
+SQL> 
+SQL> -- Part 3 ( Create Tables )  
+SQL> 
+SQL> CREATE TABLE ORDERS1992(
+  2  O_ORDERKEY	NUMBER(12)	NOT NULL,
+  3  O_CUSTKEY	NUMBER(12)	NOT NULL,
+  4  O_ORDERSTATUS	CHAR(1)		NOT NULL,
+  5  O_TOTALPRICE	NUMBER(12,2)	NOT NULL,
+  6  O_ORDERDATE	DATE		NOT NULL,
+  7  O_ORDERPRIORITY CHAR(15)	NOT NULL,
+  8  O_CLERK		CHAR(15)	NOT NULL,
+  9  O_SHIPPRIORITY	NUMBER(12)	NOT NULL,
+ 10  O_COMMENT	VARCHAR(79)	NOT NULL,
+ 11  	CONSTRAINT ORDERS_PKEY PRIMARY KEY (O_ORDERKEY),
+ 12  	CONSTRAINT ORDER_CHECK1 CHECK( O_TOTALPRICE >= 0) ) 
+ 13  TABLESPACE tbs1;
+
+Table created.
+
+SQL> 
+SQL> CREATE TABLE LINEITEM1992(
+  2  L_ORDERKEY 	NUMBER(12)	NOT NULL,
+  3  L_PARTKEY	NUMBER(12)	NOT NULL,
+  4  L_SUPPKEY	NUMBER(12)	NOT NULL,
+  5  L_LINENUMBER	NUMBER(12)	NOT NULL,
+  6  L_QUANTITY	NUMBER(12,2)	NOT NULL,
+  7  L_EXTENDEDPRICE NUMBER(12,2)	NOT NULL,
+  8  L_DISCOUNT	NUMBER(12,2)	NOT NULL,
+  9  L_TAX		NUMBER(12,2)	NOT NULL,
+ 10  L_RETURNFLAG	CHAR(1)		NOT NULL,
+ 11  L_LINESTATUS	CHAR(1)		NOT NULL,
+ 12  L_SHIPDATE	DATE		NOT NULL,
+ 13  L_COMMITDATE	DATE		NOT NULL,
+ 14  L_RECEIPTDATE	DATE		NOT NULL,
+ 15  L_SHIPINSTRUCT	CHAR(25)	NOT NULL,
+ 16  L_SHIPMODE	CHAR(10)	NOT NULL,
+ 17  L_COMMENT	VARCHAR(44)	NOT NULL,
+ 18  	CONSTRAINT LINEITEM_PKEY PRIMARY KEY (L_ORDERKEY, L_LINENUMBER),
+ 19  	CONSTRAINT LINEITEM_FKEY1 FOREIGN kEY (L_ORDERKEY)
+ 20  		REFERENCES ORDERS1992(O_ORDERKEY),
+ 21  	CONSTRAINT LINEITEM_CHECK1 CHECK (L_QUANTITY >= 0),
+ 22  	CONSTRAINT LINEITEM_CHECK2 CHECK (L_EXTENDEDPRICE >= 0),
+ 23  	CONSTRAINT LINEITEM_CHECK3 CHECK (L_TAX >= 0),
+ 24  	CONSTRAINT LINEITEM_CHECK4 CHECK (L_DISCOUNT BETWEEN 0.00 AND 1.00) )
+ 25  TABLESPACE tbs1;
+
+Table created.
+
+SQL> 
+SQL> -- Part 4 ( Copy Information ) 
+SQL> 
+SQL> select count(*) from TPCHR.ORDERS where extract(YEAR from o_orderdate) = 1992;
+
+  COUNT(*)
+----------
+     68291
+
+1 row selected. 
+
+SQL> 
+SQL> insert into ORDERS1992 ( O_ORDERKEY, 
+  2  O_CUSTKEY, O_ORDERSTATUS, 
+  3  O_TOTALPRICE, O_ORDERDATE, 
+  4  O_ORDERPRIORITY, O_CLERK, 
+  5  O_SHIPPRIORITY, O_COMMENT ) 
+  6  select * from TPCHR.ORDERS where extract(YEAR from o_orderdate) = 1992;
+
+68291 rows created.
+
+SQL> 
+SQL> insert into LINEITEM1992( 
+  2  L_ORDERKEY, L_PARTKEY, 
+  3  L_SUPPKEY, L_LINENUMBER, 
+  4  L_QUANTITY, L_EXTENDEDPRICE, 
+  5  L_DISCOUNT, L_TAX, L_RETURNFLAG, 
+  6  L_LINESTATUS, L_SHIPDATE, 
+  7  L_COMMITDATE, L_RECEIPTDATE, 
+  8  L_SHIPINSTRUCT, L_SHIPMODE, L_COMMENT )
+  9  select L_ORDERKEY, L_PARTKEY, 
+ 10  L_SUPPKEY, L_LINENUMBER, 
+ 11  L_QUANTITY, L_EXTENDEDPRICE, 
+ 12  L_DISCOUNT, L_TAX, L_RETURNFLAG, 
+ 13  L_LINESTATUS, L_SHIPDATE, 
+ 14  L_COMMITDATE, L_RECEIPTDATE, 
+ 15  L_SHIPINSTRUCT, L_SHIPMODE, L_COMMENT from 
+ 16  ( select * 
+ 17    from TPCHR.LINEITEM L
+ 18    right outer join ORDERS1992 O on L.L_ORDERKEY = O.O_ORDERKEY);
+
+273313 rows created.
+
+SQL> 
+SQL> 
+SQL> -- Part 5 ( Reducing the storage requirements ) 
+SQL> 
+SQL> select sum(TOTBYTES) / 1000000 from (
+  2  SELECT 	SEGMENT_NAME, 
+  3  	SUM(BYTES) TOTBYTES
+  4  FROM 	SYS.DBA_EXTENTS
+  5  WHERE 	SEGMENT_NAME in ('ORDERS1992','LINEITEM1992')
+  6  GROUP BY SEGMENT_NAME, 
+  7  	 OWNER
+  8  );
+
+SUM(TOTBYTES)/1000000
+---------------------
+            51.380224
+
+1 row selected. 
+
+SQL> 
+SQL> ALTER TABLESPACE tbs1 RESIZE 52M;
+
+ALTER TABLESPACE tbs1 RESIZE 52M
+ *
+ERROR at line 1:
+ORA-32773: operation not supported for smallfile tablespace TBS1
+
+SQL> 
+SQL> -- Part 6 ( Find out the number of datablocks used ) 
+SQL> 
+SQL> SELECT 	SEGMENT_NAME, 
+  2  	SUM(BYTES) TOTBYTES,
+  3         	SUM(BLOCKS) TOTBLOCKS
+  4  FROM 	SYS.DBA_EXTENTS
+  5  WHERE 	SEGMENT_NAME in ('ORDERS1992','LINEITEM1992')
+  6  GROUP BY SEGMENT_NAME, 
+  7  	 OWNER;
+
+SEGMENT_NAME                                                                                                                       TOTBYTES  TOTBLOCKS
+-------------------------------------------------------------------------------------------------------------------------------- ---------- ----------
+LINEITEM1992                                                                                                                       41943040       5120
+ORDERS1992                                                                                                                          9437184       1152
+
+2 rows selected. 
+
+SQL> 
+SQL> -- Clean  up
+SQL> 
+SQL> DROP TABLESPACE tbs1
+  2     INCLUDING CONTENTS AND DATAFILES;
+
+Tablespace dropped.
+
+SQL> 
+SQL> SPOOL OFF
