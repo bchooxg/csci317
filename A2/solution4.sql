@@ -11,14 +11,6 @@ connect TPCHR/oracle
 
 /* Create indexes */
 
-/*
-CREATE INDEX o_idx ON ORDERS (o_orderdate, o_totalprice, o_orderstatus);
-CREATE INDEX c_idx ON CUSTOMER( c_acctbal ) ;
-CREATE INDEX l_idx ON LINEITEM( l_quantity ) ;
-CREATE INDEX p_idx ON PART ( p_name ) ;
-CREATE INDEX ps_idx on PARTSUPP ( ps_supplycost );
-*/
-
 -- Bare min
 CREATE INDEX o_idx ON ORDERS (o_orderdate, o_totalprice, o_orderstatus);
 CREATE INDEX l_idx ON LINEITEM( l_quantity ) ;
@@ -90,10 +82,6 @@ SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
 /* Drop Indexes */
 DROP INDEX o_idx;
 DROP INDEX l_idx;
-/*
-DROP INDEX c_idx;
-DROP INDEX p_idx;
-DROP INDEX ps_idx;
-*/
+
 
 SPOOL OFF
